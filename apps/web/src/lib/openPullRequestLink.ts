@@ -115,6 +115,13 @@ export function parseChangeRequestUrl(targetUrl: string): ChangeRequestLink | nu
     const match = /^\/((?:[^/]+\/)*_git\/[^/]+)\/pullrequest\/(\d+)(?:\/|$)/u.exec(url.pathname);
     return claim(host, match);
   }
+  // Gitea, self-hosted included: /{owner}/{repo}/pulls/{n}. The plural segment is Gitea's own —
+  // GitHub writes `/pull/` — so it is distinctive enough to trust from any hostname, which it has
+  // to be: a Gitea install is served from whatever domain its admin chose and is not otherwise
+  // recognisable from a link. A claim still only opens the page when it matches a repository this
+  // workspace has checked out, so believing this shape costs nothing anywhere else.
+  const gitea = /^\/([^/]+\/[^/]+)\/pulls\/(\d+)(?:\/|$)/u.exec(url.pathname);
+  if (gitea) return claim(host, gitea);
   return null;
 }
 

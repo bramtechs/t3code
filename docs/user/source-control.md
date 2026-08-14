@@ -10,6 +10,7 @@ T3 Code works with the platforms your team already uses:
 - **GitLab** – Merge requests, repository publishing, and hosted clones
 - **Bitbucket** – Pull request workflows (via API token authentication)
 - **Azure DevOps** – Pull request support for Microsoft-hosted repositories
+- **Gitea** – Pull request creation, checkout, and repository publishing (via the `tea` CLI). Reading a review in the pull requests panel is not supported yet.
 
 ## What You Can Do
 
@@ -33,7 +34,7 @@ T3 Code works with the platforms your team already uses:
 
 - Push a branch and create a pull request from the Git actions controls in the toolbar
 - T3 Code can suggest titles and descriptions based on your commits
-- Supports GitHub Pull Requests, GitLab Merge Requests, Bitbucket Pull Requests, and Azure DevOps Pull Requests
+- Supports GitHub Pull Requests, GitLab Merge Requests, Bitbucket Pull Requests, Azure DevOps Pull Requests, and Gitea Pull Requests
 
 **Stay on top of open reviews**
 
@@ -129,6 +130,23 @@ Control settings**.
    az login
    ```
 
+### For Gitea
+
+1. Install the Gitea CLI:
+   ```bash
+   brew install tea
+   ```
+2. Add a login for your instance, one per host:
+   ```bash
+   tea login add
+   ```
+3. Check **Settings → Source Control** to confirm the connection
+
+Most Gitea instances are self-hosted under a domain that says nothing about what runs there, such
+as `git.example.com`. T3 Code recognises those by asking `tea` which hosts it holds a login for, so
+a repository on your own instance is only detected as Gitea once `tea login add` has been run for
+that host.
+
 ---
 
 ## Requirements & Troubleshooting
@@ -141,6 +159,7 @@ Control settings**.
 
 - **Provider shows "Not authenticated"** – Run the login command for that provider (e.g., `gh auth login`) in a terminal on the server, then rescan in Settings
 - **Bitbucket not connecting** – Double-check your environment variables are set in the correct shell profile and the server was restarted
+- **A Gitea repository is not recognised** – Run `tea logins list` on the server and confirm a login exists for that repository's host; a self-hosted instance is identified by its logins, not by its domain name
 - **Can't push to a remote** – Verify your Git remote URL matches the provider you've authenticated with (SSH vs HTTPS remotes may need different credentials)
 
 **Need more help?** Check your provider's CLI documentation:
@@ -148,3 +167,4 @@ Control settings**.
 - [GitHub CLI](https://cli.github.com/)
 - [GitLab CLI](https://gitlab.com/gitlab-org/cli)
 - [Azure CLI](https://learn.microsoft.com/en-us/cli/azure/)
+- [Gitea CLI (`tea`)](https://gitea.com/gitea/tea)

@@ -91,6 +91,33 @@ describe("parseChangeRequestUrl", () => {
     });
   });
 
+  /**
+   * Gitea's segment is the plural `/pulls/`, where GitHub writes `/pull/`. It is believed from any
+   * hostname because a self-hosted install is served from whatever domain its admin chose — and a
+   * claim only opens the page when it also matches a repository this workspace has checked out.
+   */
+  it("reads a Gitea pull request from a hostname that names nothing", () => {
+    expect(parseChangeRequestUrl("https://git.acme.test/owner/repo/pulls/8")).toEqual({
+      host: "git.acme.test",
+      repository: "owner/repo",
+      number: 8,
+    });
+    expect(parseChangeRequestUrl("https://codeberg.org/owner/repo/pulls/12")).toEqual({
+      host: "codeberg.org",
+      repository: "owner/repo",
+      number: 12,
+    });
+  });
+
+  /**
+   * A GitHub host is settled by GitHub's own rule and never falls through to Gitea's: `/pulls/` is
+   * not a change request there, so the link stays an ordinary one rather than being opened against
+   * a request that does not exist.
+   */
+  it("does not read GitHub's plural pulls path as a Gitea request", () => {
+    expect(parseChangeRequestUrl("https://github.com/t3tools/t3code/pulls/123")).toBeNull();
+  });
+
   it("reads both Azure DevOps URL forms, keeping `_git` in the repository path", () => {
     expect(
       parseChangeRequestUrl("https://dev.azure.com/acme/platform/_git/t3code/pullrequest/17"),

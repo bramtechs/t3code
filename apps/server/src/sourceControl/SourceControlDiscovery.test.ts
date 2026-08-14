@@ -11,6 +11,7 @@ import * as VcsDriverRegistry from "../vcs/VcsDriverRegistry.ts";
 import * as VcsProcess from "../vcs/VcsProcess.ts";
 import * as AzureDevOpsCli from "./AzureDevOpsCli.ts";
 import * as BitbucketApi from "./BitbucketApi.ts";
+import * as GiteaCli from "./GiteaCli.ts";
 import * as GitHubCli from "./GitHubCli.ts";
 import * as GitLabCli from "./GitLabCli.ts";
 import * as SourceControlDiscovery from "./SourceControlDiscovery.ts";
@@ -28,6 +29,7 @@ const sourceControlProviderRegistryTestLayer = (input: {
         }).pipe(Layer.provide(NodeServices.layer)),
         Layer.mock(AzureDevOpsCli.AzureDevOpsCli)({}),
         Layer.mock(BitbucketApi.BitbucketApi)(input.bitbucket),
+        Layer.mock(GiteaCli.GiteaCli)({}),
         Layer.mock(GitHubCli.GitHubCli)({}),
         Layer.mock(GitLabCli.GitLabCli)({}),
         Layer.mock(VcsDriverRegistry.VcsDriverRegistry)({}),
@@ -161,6 +163,12 @@ it.effect("reports implemented tools separately from locally available executabl
           auth: "unauthenticated",
           account: Option.none(),
         },
+        {
+          kind: "gitea",
+          status: "missing",
+          auth: "unknown",
+          account: Option.none(),
+        },
       ],
     );
     const bitbucket = result.sourceControlProviders.find((item) => item.kind === "bitbucket");
@@ -207,6 +215,14 @@ Logged in to gitlab.com as gitlab-user
         input.args.join(" ") === "account show --query user.name -o tsv"
       ) {
         return Effect.succeed(processOutput("azure-user@example.com\n"));
+      }
+      if (input.command === "tea" && input.args.join(" ") === "logins list --output json") {
+        // `tea` writes `default` as a string, and carries no token in this listing.
+        return Effect.succeed(
+          processOutput(
+            `[{"name":"gitea.example.test","url":"https://gitea.example.test","ssh_host":"gitea.example.test","user":"gitea-user","default":"true"}]`,
+          ),
+        );
       }
       return Effect.fail(
         new VcsProcessSpawnError({
@@ -275,6 +291,12 @@ Logged in to gitlab.com as gitlab-user
           kind: "bitbucket",
           auth: "authenticated",
           account: Option.some("bitbucket-user"),
+          detail: Option.none(),
+        },
+        {
+          kind: "gitea",
+          auth: "authenticated",
+          account: Option.some("gitea-user"),
           detail: Option.none(),
         },
       ],

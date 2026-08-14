@@ -1006,6 +1006,11 @@ const PROVIDER_REQUIREMENT: Partial<
     unauthenticated:
       "Bitbucket rejected the configured credentials. Check T3CODE_BITBUCKET_EMAIL and T3CODE_BITBUCKET_API_TOKEN.",
   },
+  gitea: {
+    missing:
+      "Gitea CLI (`tea`) is required to browse change requests on this host. Install it from https://gitea.com/gitea/tea and reload.",
+    unauthenticated: "Gitea CLI has no login for this host. Run `tea login add` and retry.",
+  },
 };
 
 /**

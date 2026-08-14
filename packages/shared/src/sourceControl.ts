@@ -1,7 +1,7 @@
 import type { SourceControlProviderInfo, SourceControlProviderKind } from "@t3tools/contracts";
 
 export interface ChangeRequestPresentation {
-  readonly icon: "github" | "gitlab" | "azure-devops" | "bitbucket" | "change-request";
+  readonly icon: "github" | "gitlab" | "azure-devops" | "bitbucket" | "gitea" | "change-request";
   readonly providerName: string;
   readonly shortName: string;
   readonly longName: string;
@@ -64,6 +64,18 @@ const BITBUCKET_CHANGE_REQUEST_PRESENTATION: ChangeRequestPresentation = {
   urlExample: "https://bitbucket.org/workspace/repo/pull-requests/42",
 };
 
+const GITEA_CHANGE_REQUEST_PRESENTATION: ChangeRequestPresentation = {
+  icon: "gitea",
+  providerName: "Gitea",
+  shortName: "PR",
+  longName: "pull request",
+  pluralLongName: "pull requests",
+  providerLongName: "Gitea pull request",
+  checkoutCommandExample: "tea pr checkout 123",
+  // Gitea writes the segment in the plural, unlike GitHub's `/pull/`.
+  urlExample: "https://gitea.com/owner/repo/pulls/42",
+};
+
 const GENERIC_CHANGE_REQUEST_PRESENTATION: ChangeRequestPresentation = {
   icon: "change-request",
   providerName: "source control",
@@ -87,6 +99,8 @@ export function resolveChangeRequestPresentation(
       return AZURE_DEVOPS_CHANGE_REQUEST_PRESENTATION;
     case "bitbucket":
       return BITBUCKET_CHANGE_REQUEST_PRESENTATION;
+    case "gitea":
+      return GITEA_CHANGE_REQUEST_PRESENTATION;
     case "unknown":
       return GENERIC_CHANGE_REQUEST_PRESENTATION;
   }
@@ -198,6 +212,19 @@ function isBitbucketHost(host: string): boolean {
   return host === "bitbucket.org" || hasDnsLabel(host, "bitbucket");
 }
 
+/**
+ * Only the hosts that name themselves. Gitea is overwhelmingly self-hosted under a domain that
+ * says nothing about what runs there — `git.example.com` is the norm, not the exception — so most
+ * installs land in `unknown` here and are recognised later by the provider's remote refinement,
+ * which asks `tea` whether it holds a login for the host. Guessing from the URL alone would claim
+ * every unrecognised remote for Gitea.
+ *
+ * Codeberg is included because it is a Forgejo instance, whose API and `tea` support are Gitea's.
+ */
+function isGiteaHost(host: string): boolean {
+  return host === "gitea.com" || host === "codeberg.org" || host.includes("gitea");
+}
+
 export function detectSourceControlProviderFromRemoteUrl(
   remoteUrl: string,
 ): SourceControlProviderInfo | null {
@@ -235,6 +262,19 @@ export function detectSourceControlProviderFromRemoteUrl(
     return {
       kind: "bitbucket",
       name: hostname === "bitbucket.org" ? "Bitbucket" : "Bitbucket Self-Hosted",
+      baseUrl: toBaseUrl(host),
+    };
+  }
+
+  if (isGiteaHost(hostname)) {
+    return {
+      kind: "gitea",
+      name:
+        hostname === "gitea.com"
+          ? "Gitea"
+          : hostname === "codeberg.org"
+            ? "Codeberg"
+            : "Gitea Self-Hosted",
       baseUrl: toBaseUrl(host),
     };
   }

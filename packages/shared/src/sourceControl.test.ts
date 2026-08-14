@@ -28,6 +28,10 @@ describe("source control presentation", () => {
       shortLabel: "PR",
       singular: "pull request",
     });
+    expect(getChangeRequestTerminologyForKind("gitea")).toEqual({
+      shortLabel: "PR",
+      singular: "pull request",
+    });
   });
 
   it("falls back to generic change request copy for unknown providers", () => {
@@ -91,6 +95,34 @@ describe("detectSourceControlProviderFromRemoteUrl", () => {
       name: "self-hosted.example.test:8443",
       baseUrl: "https://self-hosted.example.test:8443",
     });
+  });
+
+  it("classifies the Gitea hosts that name themselves", () => {
+    expect(detectSourceControlProviderFromRemoteUrl("https://gitea.com/owner/repo.git")).toEqual({
+      kind: "gitea",
+      name: "Gitea",
+      baseUrl: "https://gitea.com",
+    });
+    // Codeberg runs Forgejo, whose API and `tea` support are Gitea's.
+    expect(detectSourceControlProviderFromRemoteUrl("git@codeberg.org:owner/repo.git")).toEqual({
+      kind: "gitea",
+      name: "Codeberg",
+      baseUrl: "https://codeberg.org",
+    });
+    expect(
+      detectSourceControlProviderFromRemoteUrl("https://gitea.example.test/owner/repo.git")?.kind,
+    ).toBe("gitea");
+  });
+
+  /**
+   * The ordinary Gitea install is served from a domain that says nothing about what runs there.
+   * Claiming it here would claim every unrecognised remote; it is recognised later instead, by
+   * asking `tea` whether it holds a login for the host.
+   */
+  it("leaves a self-hosted Gitea under an unrelated domain unknown", () => {
+    expect(
+      detectSourceControlProviderFromRemoteUrl("https://git.example.test/owner/repo")?.kind,
+    ).toBe("unknown");
   });
 
   it("matches self-hosted providers by complete DNS labels", () => {
